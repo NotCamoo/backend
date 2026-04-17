@@ -1,6 +1,12 @@
 import json
 from pathlib import Path
 from uuid import uuid4
+import os
+from pathlib import Path
+
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+from google import genai
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -11,6 +17,8 @@ CORS(app)
 DATA_DIR = Path(__file__).resolve().parent / "data"
 DECKS_FILE = DATA_DIR / "decks.json"
 
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_ACTUAL_API_KEY_HERE")
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 def basic_reply(message: str) -> str:
     text = message.strip()
@@ -52,26 +60,39 @@ def health():
 
 @app.post("/chat")
 def chat():
-    # 1. Get the JSON data from the request
     payload = request.get_json(silent=True) or {}
+    message = payload.get("message", "")
     
-    # 2. Extract the user message
-    user_message = payload.get("message", "")
+    # 4. Use the new Gemini function
+    reply = get_gemini_reply(message)
     
-    # 3. Use your logic to generate a reply
-    bot_reply = basic_reply(user_message)
-    
-    # 4. Return the response as JSON
-    return jsonify({
-        "reply": bot_reply,
-        "status": "success"})
+    return jsonify({"reply": reply})
     
 @app.get("/decks")
 def list_decks():
     decks = _load_decks()
     return jsonify({"decks": decks})
 
+def get_gemini_reply(message: str) -> str:
+    text = message.strip()
+    if not text:
+        return "Ask me anything about your studies."
 
+    try:
+        # 3. Call the Gemini API
+        # We use a system instruction to keep the bot focused on its persona
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=text,
+            config={
+                "system_instruction": "You are a helpful study assistant. Keep answers concise and focus on helping the student understand concepts."
+            }
+        )
+        return response.text
+    except Exception as e:
+        print(f"Error calling Gemini: {e}")
+        return "I'm having trouble thinking right now. Please try again in a second!"
+        
 @app.post("/decks")
 def create_deck():
     payload = request.get_json(silent=True) or {}
@@ -105,6 +126,8 @@ def create_deck():
     decks.append(deck)
     _save_decks(decks)
     return jsonify({"deck": deck}), 201
+
+
 
 
 @app.delete("/decks/<deck_id>")
