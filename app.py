@@ -18,7 +18,7 @@ DATA_DIR = Path(__file__).resolve().parent / "data"
 DECKS_FILE = DATA_DIR / "decks.json"
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6JoA7FjMJmPQvdTIUMwyrAk6g5kmMmr1rvD9dsYW_SH-w")
-client = genai.Client(api_key=GEMINI_API_KEY)
+client = genai.Client(api_key="AQ.Ab8RN6JoA7FjMJmPQvdTIUMwyrAk6g5kmMmr1rvD9dsYW_SH-w")
 
 def basic_reply(message: str) -> str:
     text = message.strip()
