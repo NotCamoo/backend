@@ -52,11 +52,20 @@ def health():
 
 @app.post("/chat")
 def chat():
+    # 1. Get the JSON data from the request
     payload = request.get_json(silent=True) or {}
-    message = payload.get("message", "")
-    return jsonify({"reply": basic_reply(message)})
-
-
+    
+    # 2. Extract the user message
+    user_message = payload.get("message", "")
+    
+    # 3. Use your logic to generate a reply
+    bot_reply = basic_reply(user_message)
+    
+    # 4. Return the response as JSON
+    return jsonify({
+        "reply": bot_reply,
+        "status": "success"})
+    
 @app.get("/decks")
 def list_decks():
     decks = _load_decks()
